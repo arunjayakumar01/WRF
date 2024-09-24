@@ -22,7 +22,7 @@ RUN cp /scripts/install.sh ./WRF-MOSIT.sh
 RUN chmod 775 *.sh
 
 # Run the WRF-MOSIT.sh script and log output
-RUN ./WRF-MOSIT.sh 2>&1 | tee WRF_MOSIT.log
+RUN ./WRF-MOSIT.sh
 
 # CMD or ENTRYPOINT to run the container (this can be adjusted based on your needs)
 CMD ["bash"]
