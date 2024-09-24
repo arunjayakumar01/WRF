@@ -4,7 +4,7 @@ FROM ubuntu:22.04
 ENV REPO_URL=https://github.com/HathewayWill/WRF-MOSIT.git
 
 # Install dependencies
-RUN apt-get update && apt-get install -y build-essential make cmake gcc git
+RUN apt-get update && apt-get install -y build-essential make cmake gcc git wget
 
 # Clone the repository
 RUN cd $HOME && git clone $REPO_URL WRF-MOSIT

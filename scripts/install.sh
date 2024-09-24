@@ -1,6 +1,10 @@
 #!/bin/bash
 
-alias sudo=""
+if [ "$(id -u)" -eq 0 ]; then
+    # Running as root, no need for sudo
+    alias sudo=""
+fi
+
 
 # Conda environment test
 if [ -n "$CONDA_DEFAULT_ENV" ]; then
