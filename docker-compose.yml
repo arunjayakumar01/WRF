@@ -1,0 +1,22 @@
+services:
+  wrf:
+    image: ubuntu:latest  # Use your base image
+    build:
+      context: .  # Point to the directory containing Dockerfile
+    container_name: wrf_container
+    environment:
+      - Ubuntu_64bit_GNU=1      # Using GNU compiler for Ubuntu
+      - Ubuntu_64bit_Intel=0    # Intel compiler not used
+      - WRFCHEM_PICK=0          # Do not install WRF-CHEM tools
+      - macos_64bit_GNU=0       # macOS compiler not applicable
+      - Centos_64bit_GNU=0      # CentOS compiler not applicable
+      - DTC_MET=1               # Install DTC MET tools
+      - PASSWD=""               # Sudo password, empty as per your request
+      - auto_config=1           # Enable automatic configuration
+      - WRF_PICK=1              # Install WRF
+      - CPU_CORE=6              # Number of CPU cores
+      - CPU_QUARTER_EVEN=2      # Number of threads being used
+    volumes:
+      - ./scripts:/scripts  # Mount your script into the container
+    working_dir: /app                  # Set the working directory inside the container
+    command: ["bash", "WRF_MOSIT_updated_full.sh"]  # Run the script
