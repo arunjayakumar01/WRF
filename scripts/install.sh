@@ -59,6 +59,7 @@ else
 	export SYSTEMBIT="32"
 fi
 
+# Determine the chip type if on macOS (ARM or Intel)
 if [ "$SYS_ARCH" = "arm64" ]; then
 	export MAC_CHIP="ARM"
 else
@@ -144,22 +145,29 @@ if [ "$SYSTEMBIT" = "64" ] && [ "$SYSTEMOS" = "Linux" ]; then
 		echo "The environment variable Ubuntu_64bit_Intel/GNU is already set."
 	else
 		echo "The environment variable Ubuntu_64bit_Intel/GNU is not set."
-
-	export Ubuntu_64bit_GNU=1
-            -- Please note that WRF_CMAQ is only compatible with GNU Compilers
-            - GNU
-	export Ubuntu_64bit_GNU=1
-				echo "Intel is selected for installation."
-				export Ubuntu_64bit_Intel=1
-				break
-				;;
-				echo "GNU is selected for installation."
-				export Ubuntu_64bit_GNU=1
-				break
-				;;
-				echo "Please answer Intel or GNU (case-sensitive)."
-				;;
-			esac
+export Ubuntu_64bit_GNU=1
+#		# Prompt user to select a compiler (Intel or GNU)
+#		while read -r -p "Which compiler do you want to use?
+#            - Intel
+#            -- Please note that WRF_CMAQ is only compatible with GNU Compilers
+#            - GNU
+#            Please answer Intel or GNU and press enter (case-sensitive): " yn; do
+#			case $yn in
+#			Intel)
+#				echo "Intel is selected for installation."
+#				export Ubuntu_64bit_Intel=1
+#				break
+#				;;
+#			GNU)
+#				echo "GNU is selected for installation."
+#				export Ubuntu_64bit_GNU=1
+#				break
+#				;;
+#			*)
+#				echo "Please answer Intel or GNU (case-sensitive)."
+#				;;
+#			esac
+#		done
 	fi
 fi
 
@@ -235,10 +243,13 @@ export Storage_Space_Required="350"
 # Function to determine available storage space
 get_available_storage() {
 	case "$(uname -s)" in
+	Linux*)
 		df -h --output=avail ${HOME} | awk 'NR==2'
 		;;
+	Darwin*)
 		df -h ${HOME} | awk 'NR==2 {print $4}'
 		;;
+	*)
 		echo "Unsupported OS"
 		exit 1
 		;;
@@ -252,9 +263,11 @@ Storage_Space_Units=$(echo ${Storage_Space_Avail} | tr -cd '[:alpha:]')
 
 # Check if there is enough space for installation
 case $Storage_Space_Units in
+[Pp]* | [Tt]*)
 	echo "Sufficient storage space for installation found."
 	echo "-------------------------------------------------- "
 	;;
+[Gg]*)
 	if [[ ${Storage_Space_Size} -lt ${Storage_Space_Required} ]]; then
 		echo "Not enough storage space for installation. 350GB is required."
 		echo "-------------------------------------------------- "
@@ -264,10 +277,12 @@ case $Storage_Space_Units in
 		echo "-------------------------------------------------- "
 	fi
 	;;
+[MmKk]*)
 	echo "Not enough storage space for installation. 350GB is required."
 	echo "-------------------------------------------------- "
 	exit 1
 	;;
+*)
 	echo "Not enough storage space for installation. 350GB is required."
 	echo "Storage Space Available: $Storage_Space_Size $Storage_Space_Units"
 	echo "-------------------------------------------------- "
@@ -277,140 +292,153 @@ esac
 
 ############################# Enter sudo users information #############################
 echo "-------------------------------------------------- "
-while true; do
-	# Prompt for the initial password
-	read -r -s -p "
-    Password is only saved locally and will not be seen when typing.
-    Please enter your sudo password: " password1
-	echo " "
-	# Prompt for password verification
-	read -r -s -p "Please re-enter your password to verify: " password2
-	echo " "
-
-	# Check if the passwords match
-	if [ "$password1" = "$password2" ]; then
-		export PASSWD=$password1
-		echo "Password verified successfully."
-		break
-	else
-		echo "Passwords do not match. Please enter the passwords again."
-	fi
+export PASSWD=''
 
 echo "Beginning Installation"
 
 ############################# Chose GrADS or OpenGrADS #########################
 if [ "$SYSTEMOS" != "MacOS" ]; then
-	while read -r -p "Which graphic display software should be installed?
-        - OpenGrADS
-        - GrADS
-        
-        Please answer with either OpenGrADS or GrADS and press enter.
-        " yn; do
-		OpenGrADS)
-			echo " "
-			echo "OpenGrADS selected for installation"
-			echo "-------------------------------------------------- "
-			export GRADS_PICK=1 # variable set for grads or opengrads choice
-			break
-			;;
-		GrADS)
-			echo " "
-			echo "GrADS selected for installation"
-			echo "-------------------------------------------------- "
-			export GRADS_PICK=2 # variable set for grads or opengrads choice
-			break
-			;;
-			echo " "
-			echo "Please answer OpenGrADS or GrADS (case-sensitive)."
-			;;
-		esac
+  export GRADS_PICK=1
+#	while read -r -p "Which graphic display software should be installed?
+#        - OpenGrADS
+#        - GrADS
+#
+#        Please answer with either OpenGrADS or GrADS and press enter.
+#        " yn; do
+#		case $yn in
+#		OpenGrADS)
+#			echo " "
+#			echo "OpenGrADS selected for installation"
+#			echo "-------------------------------------------------- "
+#			export GRADS_PICK=1 # variable set for grads or opengrads choice
+#			break
+#			;;
+#		GrADS)
+#			echo " "
+#			echo "GrADS selected for installation"
+#			echo "-------------------------------------------------- "
+#			export GRADS_PICK=2 # variable set for grads or opengrads choice
+#			break
+#			;;
+#		*)
+#			echo " "
+#			echo "Please answer OpenGrADS or GrADS (case-sensitive)."
+#			;;
+#		esac
+#	done
 fi
 
 echo " "
 
 ##################################### Auto Configuration Test ##################
-while true; do
-	echo " Auto Configuration Check"
-	read -r -p "
-	export auto_config=1
-    
-    This will use Basic Nesting for WRF Configuration
-    
-    (Y/N)    " yn
-		export auto_config=1 #variable set for one click config and installation
-		break
-		;;
-		export auto_config=0 #variable set for manual config and installation
-		break
-		;;
-	esac
+#while true; do
+#	echo " Auto Configuration Check"
+#	read -r -p "
+#    Would you like the script to select all the configure options for you?
+#    Please note, that you should not have to type anything else in the terminal.
+#
+#    This will use Basic Nesting for WRF Configuration
+#
+#    (Y/N)    " yn
+#	case $yn in
+#	[Yy]*)
+#		export auto_config=1 #variable set for one click config and installation
+#		break
+#		;;
+#	[Nn]*)
+#		export auto_config=0 #variable set for manual config and installation
+#		break
+#		;;
+#	*) echo "Please answer yes or no." ;;
+#	esac
+#done
+export auto_config=1
 
 echo " "
 
 ################################# DTC MET Tools Test ##################
-while true; do
-	echo " NCAR's DTC MET Tools Install"
-	read -r -p "
-    Would you like the script to install the NCAR's DTC Model Evaluation Tools?
-    ***DTC MET Tools are not available for Intel Compilers at this time***
-    
-    (Y/N)    " yn
-		export DTC_MET=1
-		break
-		;;
-		export DTC_MET=0
-		break
-		;;
-	esac
-
+#while true; do
+#	echo " NCAR's DTC MET Tools Install"
+#	read -r -p "
+#    Would you like the script to install the NCAR's DTC Model Evaluation Tools?
+#    ***DTC MET Tools are not available for Intel Compilers at this time***
+#
+#    (Y/N)    " yn
+#	case $yn in
+#	[Yy]*)
+#		export DTC_MET=1
+#		break
+#		;;
+#	[Nn]*)
+#		export DTC_MET=0
+#		break
+#		;;
+#	*) echo "Please answer yes or no." ;;
+#	esac
+#done
+export DTC_MET=1
 echo " "
 
 ################################# GEOG WPS Geographical Input Data Mandatory for Specific Applications ##################
-while true; do
-	echo "-------------------------------------------------- "
-	echo " "
-	export WPS_Specific_Applications=1
-	echo "Specific Applications files can be viewed here:  "
-	echo " "
-	printf '\e]8;;https://www2.mmm.ucar.edu/wrf/users/download/get_sources_wps_geog.html\e\\Specific GEOG Applications Website (right click to open link) \e]8;;\e\\\n'
-	echo " "
-	read -r -p "(Y/N)   " yn
-		export WPS_Specific_Applications=1 #variable set for "YES" for specific application data
-		break
-		;;
-		export WPS_Specific_Applications=0 #variable set for "NO" for specific application data
-		break
-		;;
-	esac
+#while true; do
+#	echo "-------------------------------------------------- "
+#	echo " "
+#	echo "Would you like to download the WPS Geographical Input Data for Specific Applications? (Optional)"
+#	echo " "
+#	echo "Specific Applications files can be viewed here:  "
+#	echo " "
+#	printf '\e]8;;https://www2.mmm.ucar.edu/wrf/users/download/get_sources_wps_geog.html\e\\Specific GEOG Applications Website (right click to open link) \e]8;;\e\\\n'
+#	echo " "
+#	read -r -p "(Y/N)   " yn
+#	case $yn in
+#	[Yy]*)
+#		export WPS_Specific_Applications=1 #variable set for "YES" for specific application data
+#		break
+#		;;
+#	[Nn]*)
+#		export WPS_Specific_Applications=0 #variable set for "NO" for specific application data
+#		break
+#		;;
+#	*) echo "Please answer yes or no." ;;
+#	esac
+#done
+export WPS_Specific_Applications=1
 
 echo " "
 
 ################################# GEOG Optional WPS Geographical Input Data ##################
-while true; do
-	echo "-------------------------------------------------- "
-	echo " "
-	export Optional_GEOG=1
-	echo "Optional Geographical files can be viewed here:  "
-	echo " "
-	printf '\e]8;;https://www2.mmm.ucar.edu/wrf/users/download/get_sources_wps_geog.html\e\\Optional GEOG File Applications Website (right click to open link) \e]8;;\e\\\n'
-	echo " "
-	read -r -p "(Y/N)    " yn
-	echo " "
-		export Optional_GEOG=1 #variable set for "YES" for Optional GEOG Data
-		break
-		;;
-		export Optional_GEOG=0 #variable set for "NO" for Optional GEOG Data
-		break
-		;;
-	esac
-
+#while true; do
+#	echo "-------------------------------------------------- "
+#	echo " "
+#	echo "Would you like to download the GEOG Optional WPS Geographical Input Data? (Optional)"
+#	echo " "
+#	echo "Optional Geographical files can be viewed here:  "
+#	echo " "
+#	printf '\e]8;;https://www2.mmm.ucar.edu/wrf/users/download/get_sources_wps_geog.html\e\\Optional GEOG File Applications Website (right click to open link) \e]8;;\e\\\n'
+#	echo " "
+#	read -r -p "(Y/N)    " yn
+#	echo " "
+#	case $yn in
+#	[Yy]*)
+#		export Optional_GEOG=1 #variable set for "YES" for Optional GEOG Data
+#		break
+#		;;
+#	[Nn]*)
+#		export Optional_GEOG=0 #variable set for "NO" for Optional GEOG Data
+#		break
+#		;;
+#	*) echo "Please answer yes or no." ;;
+#	esac
+#done
+export Optional_GEOG=1
 echo " "
 
 ############################## Choice for which version of WRF to Install ############
 # Define the colored messages
 CMAQ_MESSAGE="\e[91m(Not available on MacOS && GNU Only)\e[0m"
 
-	export WRF_PICK=1
+echo -e "Which version of WRF would you like to install?
+-WRF
 -WRFCHEM
 -WRFHYDRO_COUPLED
 -WRFHYDRO_STANDALONE
@@ -419,66 +447,76 @@ CMAQ_MESSAGE="\e[91m(Not available on MacOS && GNU Only)\e[0m"
 
 Please enter one of the above options and press enter (Case Sensitive):"
 
-while read -r yn; do
-	WRF_SFIRE)
-		echo " "
-		echo "WRF_SFIRE selected for installation"
-		export SFIRE_PICK=1 #variable set for grads or opengrads choice
-		break
-		;;
-	WRF_CMAQ)
-		echo " "
-		echo "WRF_CMAQ selected for installation"
-		echo "WRF_CMAQ is only compatible with GNU Compilers"
-		export CMAQ_PICK=1 #variable set for grads or opengrads choice
-		break
-		;;
-	WRF)
-		echo " "
-		echo "WRF selected for installation"
-		export WRF_PICK=1 #variable set for grads or opengrads choice
-		break
-		;;
-	WRFCHEM)
-		echo " "
-		echo "WRFCHEM selected for installation"
-		export WRFCHEM_PICK=1 #variable set for grads or opengrads choice
-		break
-		;;
-	WRFHYDRO_COUPLED)
-		echo " "
-		echo "WRFHYDRO_COUPLED selected for installation"
-		export WRFHYDRO_COUPLED_PICK=1 #variable set for grads or opengrads choice
-		break
-		;;
-	WRFHYDRO_STANDALONE)
-		echo " "
-		echo "WRFHYDRO_STANDALONE selected for installation"
-		export WRFHYDRO_STANDALONE_PICK=1 #variable set for grads or opengrads choice
-		break
-		;;
-		echo " "
-		echo "Please answer WRF, WRFCHEM, WRFHYDRO_COUPLED, WRFHYDRO_STANDALONE, WRF_SFIRE, WRF_CMAQ, or HURRICANE_WRF (All Upper Case)."
-		;;
-	esac
+#while read -r yn; do
+#	case $yn in
+#	WRF_SFIRE)
+#		echo " "
+#		echo "WRF_SFIRE selected for installation"
+#		export SFIRE_PICK=1 #variable set for grads or opengrads choice
+#		break
+#		;;
+#	WRF_CMAQ)
+#		echo " "
+#		echo "WRF_CMAQ selected for installation"
+#		echo "WRF_CMAQ is only compatible with GNU Compilers"
+#		export CMAQ_PICK=1 #variable set for grads or opengrads choice
+#		break
+#		;;
+#	WRF)
+#		echo " "
+#		echo "WRF selected for installation"
+#		export WRF_PICK=1 #variable set for grads or opengrads choice
+#		break
+#		;;
+#	WRFCHEM)
+#		echo " "
+#		echo "WRFCHEM selected for installation"
+#		export WRFCHEM_PICK=1 #variable set for grads or opengrads choice
+#		break
+#		;;
+#	WRFHYDRO_COUPLED)
+#		echo " "
+#		echo "WRFHYDRO_COUPLED selected for installation"
+#		export WRFHYDRO_COUPLED_PICK=1 #variable set for grads or opengrads choice
+#		break
+#		;;
+#	WRFHYDRO_STANDALONE)
+#		echo " "
+#		echo "WRFHYDRO_STANDALONE selected for installation"
+#		export WRFHYDRO_STANDALONE_PICK=1 #variable set for grads or opengrads choice
+#		break
+#		;;
+#	*)
+#		echo " "
+#		echo "Please answer WRF, WRFCHEM, WRFHYDRO_COUPLED, WRFHYDRO_STANDALONE, WRF_SFIRE, WRF_CMAQ, or HURRICANE_WRF (All Upper Case)."
+#		;;
+#	esac
+#done
+export WRF_PICK=1
 
 ################################# WRF-CHEM Tools Test ##################
 if [ "$WRFCHEM_PICK" = "1" ]; then
-	while true; do
-		echo " NCAR's WRF-CHEM Tools Install"
-		read -r -p "
-        Would you like the script to install the NCAR's WRF-CHEM Tools?
-        
-        Not available for MacOS.  Please Select No
-        
-        (Y/N)    " yn
-			export WRFCHEM_TOOLS=1
-			break
-			;;
-			export WRFCHEM_TOOLS=0
-			break
-			;;
-		esac
+  export WRFCHEM_TOOLS=1
+#	while true; do
+#		echo " NCAR's WRF-CHEM Tools Install"
+#		read -r -p "
+#        Would you like the script to install the NCAR's WRF-CHEM Tools?
+#
+#        Not available for MacOS.  Please Select No
+#
+#        (Y/N)    " yn
+#		case $yn in
+#		[Yy]*)
+#			export WRFCHEM_TOOLS=1
+#			break
+#			;;
+#		[Nn]*)
+#			export WRFCHEM_TOOLS=0
+#			break
+#			;;
+#		*) echo "Please answer yes or no." ;;
+#		esac
+#	done
 fi
 echo " "
 
@@ -1230,6 +1268,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$DTC_MET" = "1" ] && [ "$MAC_CHIP" = "Inte
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	# Install python-dateutil using pip
 	pip3.10 install python-dateutil --break-system-packages
@@ -1274,7 +1313,8 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$DTC_MET" = "1" ] && [ "$MAC_CHIP" = "Inte
 	#default gcc path /usr/bin/gcc
 	#default homebrew path /usr/local/bin
 
-	export PASSWD=""
+	echo "Please enter password for linking GNU libraries"
+
 	# Find the highest version of GCC in /usr/local/bin
 	latest_gcc=$(ls /usr/local/bin/gcc-* 2>/dev/null | grep -o 'gcc-[0-9]*' | sort -V | tail -n 1)
 	latest_gpp=$(ls /usr/local/bin/g++-* 2>/dev/null | grep -o 'g++-[0-9]*' | sort -V | tail -n 1)
@@ -1417,6 +1457,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$DTC_MET" = "1" ] && [ "$MAC_CHIP" = "ARM"
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	# Install python-dateutil using pip
 	pip3.10 install python-dateutil --break-system-packages
@@ -3990,6 +4031,7 @@ if [ "$Ubuntu_64bit_GNU" = "1" ] && [ "$SFIRE_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -4038,6 +4080,7 @@ if [ "$Ubuntu_64bit_GNU" = "1" ] && [ "$SFIRE_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -5252,6 +5295,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$SFIRE_PICK" = "1" ] && [ "$MAC_CHIP" = "I
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	export PATH=/usr/local/bin:$PATH
@@ -5988,6 +6032,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$SFIRE_PICK" = "1" ] && [ "$MAC_CHIP" = "A
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	export PATH=/usr/local/bin:$PATH
@@ -7136,6 +7181,7 @@ if [ "$Centos_64bit_GNU" = "1" ] && [ "$SFIRE_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -7184,6 +7230,7 @@ if [ "$Centos_64bit_GNU" = "1" ] && [ "$SFIRE_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -8032,6 +8079,7 @@ if [ "$Centos_64bit_GNU" = "2" ] && [ "$SFIRE_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -8080,6 +8128,7 @@ if [ "$Centos_64bit_GNU" = "2" ] && [ "$SFIRE_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV$Mpich_Version/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -9102,6 +9151,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$WRFHYDRO_STANDALONE_PICK" = "1" ] && [ "$
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	export PATH=/usr/local/bin:$PATH
@@ -9689,6 +9739,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$WRFHYDRO_STANDALONE_PICK" = "1" ] && [ "$
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	export PATH=/usr/local/bin:$PATH
@@ -12297,6 +12348,7 @@ if [ "$Ubuntu_64bit_GNU" = "1" ] && [ "$WRFHYDRO_COUPLED_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -12346,6 +12398,7 @@ if [ "$Ubuntu_64bit_GNU" = "1" ] && [ "$WRFHYDRO_COUPLED_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -13757,6 +13810,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$WRFHYDRO_COUPLED_PICK" = "1" ] && [ "$MAC
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	export PATH=/usr/local/bin:$PATH
@@ -14558,6 +14612,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$WRFHYDRO_COUPLED_PICK" = "1" ] && [ "$MAC
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	export PATH=/usr/local/bin:$PATH
@@ -15776,6 +15831,7 @@ if [ "$Centos_64bit_GNU" = "1" ] && [ "$WRFHYDRO_COUPLED_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -15824,6 +15880,7 @@ if [ "$Centos_64bit_GNU" = "1" ] && [ "$WRFHYDRO_COUPLED_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -16761,6 +16818,7 @@ if [ "$Centos_64bit_GNU" = "2" ] && [ "$WRFHYDRO_COUPLED_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -16809,6 +16867,7 @@ if [ "$Centos_64bit_GNU" = "2" ] && [ "$WRFHYDRO_COUPLED_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -17696,6 +17755,7 @@ if [ "$Ubuntu_64bit_GNU" = "1" ] && [ "$WRFCHEM_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -17745,6 +17805,7 @@ if [ "$Ubuntu_64bit_GNU" = "1" ] && [ "$WRFCHEM_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -19158,6 +19219,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$WRFCHEM_PICK" = "1" ] && [ "$MAC_CHIP" = 
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	export PATH=/usr/local/bin:$PATH
@@ -19948,6 +20010,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$WRFCHEM_PICK" = "1" ] && [ "$MAC_CHIP" = 
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	export PATH=/usr/local/bin:$PATH
@@ -21157,6 +21220,7 @@ if [ "$Centos_64bit_GNU" = "1" ] && [ "$WRFCHEM_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -21205,6 +21269,7 @@ if [ "$Centos_64bit_GNU" = "1" ] && [ "$WRFCHEM_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -22147,6 +22212,7 @@ if [ "$Centos_64bit_GNU" = "2" ] && [ "$WRFCHEM_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -22195,6 +22261,7 @@ if [ "$Centos_64bit_GNU" = "2" ] && [ "$WRFCHEM_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -23122,6 +23189,7 @@ if [ "$Ubuntu_64bit_GNU" = "1" ] && [ "$WRF_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -23170,6 +23238,7 @@ if [ "$Ubuntu_64bit_GNU" = "1" ] && [ "$WRF_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -24666,6 +24735,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$WRF_PICK" = "1" ] && [ "$MAC_CHIP" = "Int
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	export PATH=/usr/local/bin:$PATH
@@ -25489,6 +25559,7 @@ if [ "$macos_64bit_GNU" = "1" ] && [ "$WRF_PICK" = "1" ] && [ "$MAC_CHIP" = "ARM
 			brew install "$pkg"
 		fi
 		sleep 1
+	done
 
 	export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 	export PATH=/usr/local/bin:$PATH
@@ -26735,6 +26806,7 @@ if [ "$Centos_64bit_GNU" = "1" ] && [ "$WRF_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -26783,6 +26855,7 @@ if [ "$Centos_64bit_GNU" = "1" ] && [ "$WRF_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -27750,6 +27823,7 @@ if [ "$Centos_64bit_GNU" = "2" ] && [ "$WRF_PICK" = "1" ]; then
 		y="24 28 32 36 40 45 49 53 56 60 64 68 69 73 74 79"
 		for X in $y; do
 			sed -i "${X}s/= /= $fallow_argument $boz_argument /g" "${WRF_FOLDER}"/Downloads/NCEPlibs/macros.make.linux.gnu
+		done
 	else
 		echo ""
 		echo "Loop not needed"
@@ -27798,6 +27872,7 @@ if [ "$Centos_64bit_GNU" = "2" ] && [ "$WRF_PICK" = "1" ]; then
 		z="58 63"
 		for X in $z; do
 			sed -i "${X}s/(FOPT)/(FOPT) $fallow_argument $boz_argument  /g" "${WRF_FOLDER}"/UPPV4.1/configure.upp
+		done
 	else
 		echo ""
 		echo "Loop not needed"
