@@ -12,7 +12,10 @@ RUN cd $HOME && git clone $REPO_URL WRF-MOSIT
 # Set working directory to the cloned repository
 WORKDIR $HOME/WRF-MOSIT
 
+
+
 # Copy and rename the install script to WRF-MOSIT.sh
+COPY ./scripts /scripts
 RUN cp /scripts/install.sh ./WRF-MOSIT.sh
 
 # Make all .sh scripts executable
