@@ -1,5 +1,7 @@
 #!/bin/bash
 
+alias sudo=""
+
 # Conda environment test
 if [ -n "$CONDA_DEFAULT_ENV" ]; then
 	echo "CONDA_DEFAULT_ENV is active: $CONDA_DEFAULT_ENV"
