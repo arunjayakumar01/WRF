@@ -21,6 +21,8 @@ RUN cp /scripts/install.sh ./WRF-MOSIT.sh
 # Make all .sh scripts executable
 RUN chmod 775 *.sh
 
+RUN pip install python-dateutil
+
 # Run the WRF-MOSIT.sh script and log output
 RUN ./WRF-MOSIT.sh
 
